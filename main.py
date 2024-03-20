@@ -5,22 +5,26 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.schema import HumanMessage, SystemMessage
 from langchain_community.chat_models.huggingface import ChatHuggingFace
+from retriever import documents_retriever
+from reader import READER_LLM
 
 load_dotenv()
 
-HUGGINGFACEHUB_API_TOKEN = os.getenv('HUGGINGFACEHUB_API_TOKEN')
-MODEL_REPO_ID = os.getenv("MODEL_REPO_ID")
+if __name__ == '__main__':    
 
-question = "Who is the 2008 ballon d'or winner ?"
-template = """Question: {question}
-Answer : Let's think step by step.
-"""
-prompt = PromptTemplate.from_template(template)
+        HUGGINGFACEHUB_API_TOKEN = os.getenv('HUGGINGFACEHUB_API_TOKEN')
+        MODEL_REPO_ID = os.getenv("MODEL_REPO_ID")
 
-llm = HuggingFaceEndpoint(
-    repo_id=MODEL_REPO_ID, max_length=128, temperature=0.5, token=HUGGINGFACEHUB_API_TOKEN
-)
+        question = "Who is the 2008 ballon d'or winner ?"
+        template = """Question: {question}
+        Answer : Let's think step by step.
+        """
+        prompt = PromptTemplate.from_template(template)
 
-llm_chain = LLMChain(prompt=prompt, llm=llm)
+        llm = HuggingFaceEndpoint(
+            repo_id=MODEL_REPO_ID, max_length=128, temperature=0.5, token=HUGGINGFACEHUB_API_TOKEN
+        )
 
-print(llm_chain.run(question))
+        llm_chain = LLMChain(prompt=prompt, llm=llm)
+
+        print(llm_chain.run(question))
