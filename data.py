@@ -8,16 +8,14 @@ import datasets
 from langchain.docstore.document import Document as LangchainDocument
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from transformers import AutoTokenizer
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores.utils import DistanceStrategy
 
 load_dotenv()
-
 pd.set_option("display.max_colwidth", None)  # helpful when visualizing retriever outputs
 
-ds = datasets.load_dataset("m-ric/huggingface_doc", split="train")
-
-RAW_KNOWLEDGE_BASE = [
-LangchainDocument(page_content=doc["text"], metadata={"source": doc["source"]}) for doc in ds
-]
+EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_ID")
 
 MARKDOWN_SEPARATORS = [
     "\n#{1,6} ",
@@ -31,7 +29,14 @@ MARKDOWN_SEPARATORS = [
     "",
 ]
 
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_ID")
+def get_documents() : 
+    ds = datasets.load_dataset("m-ric/huggingface_doc", split="train")
+
+    RAW_KNOWLEDGE_BASE = [
+    LangchainDocument(page_content=doc["text"], metadata={"source": doc["source"]}) for doc in ds
+    ]
+    return RAW_KNOWLEDGE_BASE
+
 
 def split_documents(
     chunk_size: int,
@@ -66,6 +71,17 @@ def split_documents(
 
 docs_processed = split_documents(
     512,  # We choose a chunk size adapted to our model
-    RAW_KNOWLEDGE_BASE,
+    get_documents(),
     tokenizer_name=EMBEDDING_MODEL_NAME,
+)
+
+embedding_model = HuggingFaceEmbeddings(
+    model_name=EMBEDDING_MODEL_NAME,
+    multi_process=True,
+    model_kwargs={"device": "cuda"},
+    encode_kwargs={"normalize_embeddings": True},  # set True for cosine similarity
+)
+
+KNOWLEDGE_VECTOR_DATABASE = FAISS.from_documents(
+    docs_processed, embedding_model, distance_strategy=DistanceStrategy.COSINE
 )
