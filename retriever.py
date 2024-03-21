@@ -1,19 +1,22 @@
-import os
-from dotenv import load_dotenv
-from data import Chroma,HuggingFaceEmbeddings
+from vector_database import Chroma
 
-load_dotenv()
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_ID")
-DATA_CHROMA_PATH = os.getenv("DATA_CHROMA_PATH")
+class Retriever():
+    def __init__(self, data_path) -> None:
+        self.data_path = data_path
+        self.vector_db = None
+    
+    def get_vector_db(self,embedding_model) : 
+        try : 
+            documents_vector_db = Chroma(
+            persist_directory=self.data_path,
+            embedding_function=embedding_model)
+            return documents_vector_db
+        except Exception as e : 
+            print(f"Issue when retrieving vector db. Exception : {e}")
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name=EMBEDDING_MODEL_NAME,
-    multi_process=True,
-    model_kwargs={"device": "cuda"},
-    encode_kwargs={"normalize_embeddings": True},  # set True for cosine similarity
-)
-documents_vector_db = Chroma(
-    persist_directory=DATA_CHROMA_PATH,
-    embedding_function=embedding_model,
-)
-documents_retriever  = documents_vector_db.as_retriever(k=10)
+    def get_documents_retriever(self,documents_vector_db,k) : 
+        try : 
+            documents_retriever  = documents_vector_db.as_retriever(k=k)
+            return documents_retriever
+        except Exception as e : 
+            print(f"Issue when trying to setup documents retriever. Exception : {e}")
